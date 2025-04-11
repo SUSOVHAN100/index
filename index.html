@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Reality Library</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            overflow: hidden;
+            background-color: #000;
+            touch-action: none;
+        }
+        
+        #login-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #001a00, #000);
+            z-index: 100;
+            transition: all 1s ease;
+        }
+        
+        .door {
+            position: relative;
+            width: 300px;
+            height: 500px;
+            background: linear-gradient(to right, #0a2e0a, #0f3d0f);
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 255, 100, 0.5),
+                        0 0 40px rgba(0, 255, 100, 0.3),
+                        0 0 80px rgba(0, 255, 100, 0.2);
+            transform-style: preserve-3d;
+            transition: transform 1.5s ease-in-out;
+            overflow: hidden;
+        }
+        
+        .door::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #0f3d0f, #001a00);
+            border-radius: 50%;
+            border: 3px solid rgba(0, 255, 100, 0.7);
+            box-shadow: 0 0 15px rgba(0, 255, 100, 0.8);
+        }
+        
+        .door.open {
+            transform: perspective(1000px) rotateY(-120deg);
+        }
+        
+        .login-form {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: rgba(0, 20, 0, 0.7);
+            backdrop-filter: blur(5px);
+            transform: translateZ(20px);
+            color: #00ff64;
+        }
+        
+        .login-form h1 {
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(0, 255, 100, 0.8);
+            font-size: 2rem;
+        }
+        
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            background: rgba(0, 30, 0, 0.7);
+            border: 1px solid #00ff64;
+            border-radius: 4px;
+            color: #00ff64;
+            font-size: 1rem;
+            outline: none;
+        }
+        
+        .login-form input::placeholder {
+            color: rgba(0, 255, 100, 0.5);
+        }
+        
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #00aa50, #00ff64);
+            border: none;
+            border-radius: 4px;
+            color: #001a00;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .login-form button:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 100, 0.8);
+        }
+        
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        
+        #book-viewer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 10, 0, 0.9);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            color: #00ff64;
+        }
+        
+        #book-content {
+            width: 80%;
+            height: 80%;
+            padding: 20px;
+            background: rgba(0, 20, 0, 0.7);
+            border: 1px solid #00ff64;
+            border-radius: 5px;
+            overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0, 255, 100, 0.5);
+        }
+        
+        #close-book {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: linear-gradient(to right, #00aa50, #00ff64);
+            border: none;
+            border-radius: 4px;
+            color: #001a00;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 5;
+        }
+        
+        .control-btn {
+            padding: 10px 15px;
+            background: rgba(0, 30, 0, 0.7);
+            border: 1px solid #00ff64;
+            border-radius: 4px;
+            color: #00ff64;
+            cursor: pointer;
+        }
+        
+        .shelf-label {
+            position: absolute;
+            color: #00ff64;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(0, 255, 100, 0.8);
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ff64;
+            background: rgba(0, 20, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #00ff64;
+            text-align: center;
+            z-index: 5;
+        }
+        
+        .book-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        #pointer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        #pointer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0, 255, 100, 0.5);
+            box-shadow: 0 0 10px rgba(0, 255, 100, 0.8);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.7; }
+        }
+        
+        #hand-pointer {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+        
+        #hand-pointer img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        #vr-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: rgba(0, 30, 0, 0.7);
+            border: 1px solid #00ff64;
+            border-radius: 4px;
+            color: #00ff64;
+            cursor: pointer;
+            z-index: 5;
+        }
+        
+        #book-in-hand {
+            position: absolute;
+            width: 100px;
+            height: 150px;
+            background: rgba(0, 20, 0, 0.7);
+            border: 1px solid #00ff64;
+            border-radius: 5px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        #book-in-hand-title {
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 5px;
+            color: #00ff64;
+        }
+        
+        #book-in-hand-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 15px;
+            height: 15px;
+            background: #ff5555;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container">
+        <div class="door">
+            <div class="login-form">
+                <h1>Virtual Library</h1>
+                <input type="text" id="username" placeholder="Student ID">
+                <input type="password" id="password" placeholder="Password">
+                <button id="login-btn">Enter</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="canvas-container">
+        <div id="instructions">Click to lock controls, then click on books to read them</div>
+        <div id="controls">
+            <button class="control-btn" id="move-forward">Move Forward</button>
+            <button class="control-btn" id="move-backward">Move Backward</button>
+            <button class="control-btn" id="turn-left">Turn Left</button>
+            <button class="control-btn" id="turn-right">Turn Right</button>
+            <button class="control-btn" id="vr-toggle">VR Mode</button>
+        </div>
+        <div id="pointer"></div>
+        <div id="hand-pointer">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjMDBmZjY0IiBkPSJNNDQ4IDI1NnYxNjBjMCAzNS4zLTI4LjcgNjQtNjQgNjRINjRjLTM1LjMgMC02NC0yOC43LTY0LTY0VjExMmMwLTM1LjMgMjguNy02NCA2NC02NGgyNzJjOC44IDAgMTYgNy4yIDE2IDE2djMyYzAgOC44LTcuMiAxNi0xNiAxNkg2NHYzMmgxMjhjOC44IDAgMTYgNy4yIDE2IDE2djMyYzAgOC44LTcuMiAxNi0xNiAxNkg2NHYzMmgxNjBjOC44IDAgMTYgNy4yIDE2IDE2djMyYzAgOC44LTcuMiAxNi0xNiAxNkg2NHYzMmgxOTJjOC44IDAgMTYgNy4yIDE2IDE2djMyYzAgOC44LTcuMiAxNi0xNiAxNnptMjQtMjQwTDM0NCAxMDhjLTYuMi02LjItMTYuMi02LjItMjIuNCAwbC0xMjggMTI4Yy0zLjEgMy4xLTguMiAzLjEtMTEuMyAwbC00OC00OGMtNi4yLTYuMi0xNi4yLTYuMi0yMi40IDBsLTQwIDQwYy02LjIgNi4yLTYuMiAxNi4yIDAgMjIuNGwxMzYuMSAxMzYuMWM2LjIgNi4yIDE2LjIgNi4yIDIyLjQgMGwyMDguOC0yMDguOGM2LjItNi4yIDYuMi0xNi4yIDAtMjIuNEw0NzIgMTZjLTYuMi02LjItMTYuMi02LjItMjIuNCAweiIvPjwvc3ZnPg==" alt="Hand Pointer">
+        </div>
+        <div id="book-in-hand">
+            <button id="book-in-hand-close"></button>
+            <div id="book-in-hand-title"></div>
+        </div>
+    </div>
+    
+    <div id="book-viewer">
+        <div id="book-content"></div>
+        <button id="close-book">Close Book</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/PointerLockControls.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Login functionality
+            const loginContainer = document.getElementById('login-container');
+            const door = document.querySelector('.door');
+            const loginBtn = document.getElementById('login-btn');
+            const canvasContainer = document.getElementById('canvas-container');
+            const bookViewer = document.getElementById('book-viewer');
+            const bookContent = document.getElementById('book-content');
+            const closeBookBtn = document.getElementById('close-book');
+            const instructions = document.getElementById('instructions');
+            const pointer = document.getElementById('pointer');
+            const handPointer = document.getElementById('hand-pointer');
+            const vrToggleBtn = document.getElementById('vr-toggle');
+            const bookInHand = document.getElementById('book-in-hand');
+            const bookInHandTitle = document.getElementById('book-in-hand-title');
+            const bookInHandClose = document.getElementById('book-in-hand-close');
+            
+            // Enhanced book content with all requested categories
+            const books = {
+                'physics': [
+                    { title: 'The Feynman Lectures', content: 'Comprehensive physics lectures by Richard Feynman covering all major areas of physics.' },
+                    { title: 'A Brief History of Time', content: 'Stephen Hawking\'s exploration of cosmology for the general reader.' },
+                    { title: 'Quantum Mechanics', content: 'Fundamental concepts of quantum theory and its applications.' },
+                    { title: 'Classical Mechanics', content: 'Detailed treatment of Newtonian mechanics and its extensions.' }
+                ],
+                'mathematics': [
+                    { title: 'Calculus Made Easy', content: 'Introduction to differential and integral calculus with practical applications.' },
+                    { title: 'Linear Algebra', content: 'Comprehensive coverage of vectors, matrices, and linear transformations.' },
+                    { title: 'Discrete Mathematics', content: 'Foundations of discrete structures used in computer science.' },
+                    { title: 'Number Theory', content: 'Study of properties and relationships of numbers, especially integers.' }
+                ],
+                'chemistry': [
+                    { title: 'Principles of Chemistry', content: 'Fundamental concepts of atoms, molecules, and chemical reactions.' },
+                    { title: 'Organic Chemistry', content: 'Study of structure, properties, and reactions of organic compounds.' },
+                    { title: 'Physical Chemistry', content: 'Application of physics to chemical systems and processes.' },
+                    { title: 'Biochemistry', content: 'Chemical processes within and relating to living organisms.' }
+                ],
+                'literature': [
+                    { title: 'To Kill a Mockingbird', content: 'Harper Lee\'s classic novel about racial injustice in the American South.' },
+                    { title: '1984', content: 'George Orwell\'s dystopian novel about totalitarianism and surveillance.' },
+                    { title: 'Pride and Prejudice', content: 'Jane Austen\'s romantic novel of manners in Regency England.' },
+                    { title: 'The Great Gatsby', content: 'F. Scott Fitzgerald\'s portrayal of the American Dream in the Jazz Age.' }
+                ],
+                'geography': [
+                    { title: 'Physical Geography', content: 'Study of Earth\'s physical features and processes.' },
+                    { title: 'Human Geography', content: 'How human activity affects or is influenced by the Earth\'s surface.' },
+                    { title: 'World Regional Geography', content: 'Survey of world regions and their distinctive characteristics.' },
+                    { title: 'Geographic Information Systems', content: 'Computer systems for capturing, storing, and displaying geographic data.' }
+                ],
+                'history': [
+                    { title: 'A People\'s History', content: 'History from the perspective of common people rather than political leaders.' },
+                    { title: 'The Guns of August', content: 'Barbara Tuchman\'s account of the first month of World War I.' },
+                    { title: 'Sapiens', content: 'Yuval Noah Harari\'s exploration of the history of humankind.' },
+                    { title: 'The Civil War', content: 'Comprehensive history of the American Civil War.' }
+                ],
+                'computer_science': [
+                    { title: 'Introduction to Algorithms', content: 'Comprehensive reference on algorithms and data structures.' },
+                    { title: 'Clean Code', content: 'Principles for writing maintainable and efficient code.' },
+                    { title: 'Design Patterns', content: 'Classic solutions to common software design problems.' },
+                    { title: 'Computer Networks', content: 'Principles and practice of computer networking.' }
+                ],
+                'electrical_engineering': [
+                    { title: 'Circuit Analysis', content: 'Fundamentals of electric circuit theory and analysis.' },
+                    { title: 'Digital Design', content: 'Principles of digital logic and computer design.' },
+                    { title: 'Electromagnetics', content: 'Theory and applications of electromagnetic fields.' },
+                    { title: 'Power Systems', content: 'Generation, transmission, and distribution of electric power.' }
+                ],
+                'chemical_engineering': [
+                    { title: 'Process Dynamics', content: 'Modeling and analysis of chemical process systems.' },
+                    { title: 'Transport Phenomena', content: 'Fundamentals of momentum, heat, and mass transfer.' },
+                    { title: 'Reaction Engineering', content: 'Design and analysis of chemical reactors.' },
+                    { title: 'Separation Processes', content: 'Techniques for separating chemical mixtures.' }
+                ],
+                'programming_languages': [
+                    { title: 'Python Crash Course', content: 'Hands-on introduction to Python programming.' },
+                    { title: 'JavaScript: The Good Parts', content: 'Best practices for effective JavaScript programming.' },
+                    { title: 'Effective Java', content: 'Best practices and design patterns for Java developers.' },
+                    { title: 'C++ Primer', content: 'Comprehensive introduction to C++ programming.' }
+                ],
+                'app_development': [
+                    { title: 'iOS Programming', content: 'Development of applications for Apple\'s iOS platform.' },
+                    { title: 'Android Development', content: 'Building applications for Android devices.' },
+                    { title: 'React Native', content: 'Cross-platform mobile development with JavaScript.' },
+                    { title: 'Flutter Handbook', content: 'Building native mobile apps with Flutter framework.' }
+                ],
+                'web_development': [
+                    { title: 'HTML & CSS', content: 'Design and build websites with modern standards.' },
+                    { title: 'JavaScript & jQuery', content: 'Interactive front-end web development.' },
+                    { title: 'Node.js in Action', content: 'Building server-side applications with JavaScript.' },
+                    { title: 'Full Stack Development', content: 'Complete guide to modern web development stacks.' }
+                ],
+                'cyber_security': [
+                    { title: 'Hacking: The Art', content: 'Fundamentals of penetration testing and security.' },
+                    { title: 'Network Security', content: 'Principles and practices for securing networks.' },
+                    { title: 'Cryptography', content: 'Mathematical foundations of secure communication.' },
+                    { title: 'Ethical Hacking', content: 'Legal penetration testing and vulnerability assessment.' }
+                ],
+                'cloud_computing': [
+                    { title: 'AWS Certified', content: 'Guide to Amazon Web Services and cloud architecture.' },
+                    { title: 'Azure Fundamentals', content: 'Microsoft\'s cloud computing platform.' },
+                    { title: 'Google Cloud', content: 'Developing applications on Google Cloud Platform.' },
+                    { title: 'Cloud Native', content: 'Building applications designed for cloud environments.' }
+                ],
+                'data_science': [
+                    { title: 'Python for Data', content: 'Data analysis and visualization with Python.' },
+                    { title: 'R for Statistics', content: 'Statistical computing with R programming language.' },
+                    { title: 'Data Mining', content: 'Techniques for extracting knowledge from data.' },
+                    { title: 'Big Data', content: 'Processing and analyzing large datasets.' }
+                ],
+                'machine_learning': [
+                    { title: 'Hands-On ML', content: 'Practical guide to machine learning with Scikit-Learn.' },
+                    { title: 'Deep Learning', content: 'Neural networks and modern AI techniques.' },
+                    { title: 'Pattern Recognition', content: 'Algorithms for classifying and recognizing patterns.' },
+                    { title: 'AI Algorithms', content: 'Fundamental algorithms in artificial intelligence.' }
+                ],
+                'artificial_intelligence': [
+                    { title: 'AI: Modern Approach', content: 'Comprehensive textbook on artificial intelligence.' },
+                    { title: 'Reinforcement Learning', content: 'Learning through interaction with environments.' },
+                    { title: 'Natural Language', content: 'Processing and understanding human language.' },
+                    { title: 'Computer Vision', content: 'Algorithms for interpreting visual data.' }
+                ]
+            };
+            
+            let isVRMode = false;
+            let currentBook = null;
+            
+            loginBtn.addEventListener('click', () => {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                if (username && password) {
+                    door.classList.add('open');
+                    
+                    setTimeout(() => {
+                        loginContainer.style.opacity = '0';
+                        setTimeout(() => {
+                            loginContainer.style.display = 'none';
+                            initLibrary();
+                        }, 1000);
+                    }, 1500);
+                } else {
+                    alert('Please enter both username and password');
+                }
+            });
+            
+            closeBookBtn.addEventListener('click', () => {
+                bookViewer.style.display = 'none';
+                canvasContainer.style.display = 'block';
+            });
+            
+            bookInHandClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bookInHand.style.display = 'none';
+                if (currentBook) {
+                    currentBook.visible = true;
+                    currentBook = null;
+                }
+            });
+            
+            vrToggleBtn.addEventListener('click', () => {
+                isVRMode = !isVRMode;
+                vrToggleBtn.textContent = isVRMode ? 'Exit VR Mode' : 'VR Mode';
+                pointer.style.display = isVRMode ? 'none' : 'block';
+                handPointer.style.display = isVRMode ? 'block' : 'none';
+                
+                if (isVRMode) {
+                    instructions.textContent = "Move your mouse to look around. Click and drag to pick up books. Click on books in your hand to read them.";
+                } else {
+                    instructions.textContent = "Click to lock controls, then click on books to read them";
+                }
+            });
+            
+            // 3D Library
+            function initLibrary() {
+                canvasContainer.style.display = 'block';
+                
+                // Scene setup
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x001a00);
+                scene.fog = new THREE.FogExp2(0x001a00, 0.002);
+                
+                // Camera
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(0, 1.6, 5);
+                
+                // Renderer
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                canvasContainer.appendChild(renderer.domElement);
+                
+                // Controls
+                const controls = new THREE.PointerLockControls(camera, document.body);
+                
+                // Event listeners for pointer lock
+                document.addEventListener('click', () => {
+                    if (!isVRMode && !controls.isLocked) {
+                        controls.lock();
+                        instructions.style.display = 'none';
+                    }
+                });
+                
+                controls.addEventListener('lock', () => {
+                    document.getElementById('controls').style.display = 'flex';
+                });
+                
+                controls.addEventListener('unlock', () => {
+                    document.getElementById('controls').style.display = 'none';
+                    instructions.style.display = 'block';
+                });
+                
+                // Button controls
+                const moveForwardBtn = document.getElementById('move-forward');
+                const moveBackwardBtn = document.getElementById('move-backward');
+                const turnLeftBtn = document.getElementById('turn-left');
+                const turnRightBtn = document.getElementById('turn-right');
+                
+                let moveForward = false;
+                let moveBackward = false;
+                let turnLeft = false;
+                let turnRight = false;
+                
+                moveForwardBtn.addEventListener('mousedown', () => moveForward = true);
+                moveForwardBtn.addEventListener('mouseup', () => moveForward = false);
+                moveForwardBtn.addEventListener('mouseleave', () => moveForward = false);
+                
+                moveBackwardBtn.addEventListener('mousedown', () => moveBackward = true);
+                moveBackwardBtn.addEventListener('mouseup', () => moveBackward = false);
+                moveBackwardBtn.addEventListener('mouseleave', () => moveBackward = false);
+                
+                turnLeftBtn.addEventListener('mousedown', () => turnLeft = true);
+                turnLeftBtn.addEventListener('mouseup', () => turnLeft = false);
+                turnLeftBtn.addEventListener('mouseleave', () => turnLeft = false);
+                
+                turnRightBtn.addEventListener('mousedown', () => turnRight = true);
+                turnRightBtn.addEventListener('mouseup', () => turnRight = false);
+                turnRightBtn.addEventListener('mouseleave', () => turnRight = false);
+                
+                // Lights
+                const ambientLight = new THREE.AmbientLight(0x003300, 0.5);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0x00ff64, 0.8);
+                directionalLight.position.set(0, 10, 5);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 1024;
+                directionalLight.shadow.mapSize.height = 1024;
+                scene.add(directionalLight);
+                
+                // Color scheme for categories
+                const categoryColors = {
+                    'physics': 0xff5555,       // Red
+                    'mathematics': 0x55aaff,    // Blue
+                    'chemistry': 0xffaa55,     // Orange
+                    'literature': 0xaa55ff,    // Purple
+                    'geography': 0x55ffaa,     // Teal
+                    'history': 0xff55aa,       // Pink
+                    'computer_science': 0x55ff55, // Green
+                    'electrical_engineering': 0xffff55, // Yellow
+                    'chemical_engineering': 0xffaa55, // Orange
+                    'programming_languages': 0x55ffff, // Cyan
+                    'app_development': 0xaa55ff, // Purple
+                    'web_development': 0xff55ff, // Magenta
+                    'cyber_security': 0xff5555, // Red
+                    'cloud_computing': 0x5555ff, // Dark Blue
+                    'data_science': 0x55ff55,   // Green
+                    'machine_learning': 0xffaa00, // Gold
+                    'artificial_intelligence': 0x00aaff  // Sky Blue
+                };
+                
+                // Floor
+                const floorGeometry = new THREE.PlaneGeometry(100, 100);
+                const floorMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x002200,
+                    roughness: 0.8,
+                    metalness: 0.2
+                });
+                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                floor.rotation.x = -Math.PI / 2;
+                floor.receiveShadow = true;
+                scene.add(floor);
+                
+                // Ceiling
+                const ceilingGeometry = new THREE.PlaneGeometry(100, 100);
+                const ceilingMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x001100,
+                    emissive: 0x002200,
+                    emissiveIntensity: 0.2
+                });
+                const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.position.y = 8;
+                ceiling.receiveShadow = true;
+                scene.add(ceiling);
+                
+                // Walls
+                const wallMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x001a00,
+                    emissive: 0x003300,
+                    emissiveIntensity: 0.1
+                });
+                
+                const leftWall = new THREE.Mesh(
+                    new THREE.PlaneGeometry(100, 8),
+                    wallMaterial
+                );
+                leftWall.rotation.y = Math.PI / 2;
+                leftWall.position.set(-50, 4, 0);
+                leftWall.receiveShadow = true;
+                scene.add(leftWall);
+                
+                const rightWall = new THREE.Mesh(
+                    new THREE.PlaneGeometry(100, 8),
+                    wallMaterial
+                );
+                rightWall.rotation.y = -Math.PI / 2;
+                rightWall.position.set(50, 4, 0);
+                rightWall.receiveShadow = true;
+                scene.add(rightWall);
+                
+                const backWall = new THREE.Mesh(
+                    new THREE.PlaneGeometry(100, 8),
+                    wallMaterial
+                );
+                backWall.position.set(0, 4, -50);
+                backWall.receiveShadow = true;
+                scene.add(backWall);
+                
+                // Bookshelves
+                const shelfCategories = Object.keys(books);
+                const shelfPositions = [];
+                
+                // Generate positions in a circular pattern
+                const radius = 15;
+                const count = shelfCategories.length;
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * Math.PI * 2;
+                    shelfPositions.push({
+                        x: Math.cos(angle) * radius,
+                        z: Math.sin(angle) * radius,
+                        rotation: angle + Math.PI
+                    });
+                }
+                
+                const bookshelves = [];
+                
+                // Book geometry and material
+                const bookGeometry = new THREE.BoxGeometry(0.8, 0.02, 0.5);
+                
+                // Create bookshelves
+                shelfPositions.forEach((pos, index) => {
+                    const category = shelfCategories[index];
+                    const shelfGroup = new THREE.Group();
+                    shelfGroup.position.set(pos.x, 0, pos.z);
+                    shelfGroup.rotation.y = pos.rotation;
+                    
+                    // Add category-specific point light
+                    const pointLight = new THREE.PointLight(categoryColors[category], 1, 10);
+                    pointLight.position.set(pos.x, 3, pos.z);
+                    pointLight.castShadow = true;
+                    scene.add(pointLight);
+                    
+                    // Add light halo effect
+                    const lightHalo = new THREE.Mesh(
+                        new THREE.SphereGeometry(1.5, 32, 32),
+                        new THREE.MeshBasicMaterial({ 
+                            color: categoryColors[category],
+                            transparent: true,
+                            opacity: 0.2
+                        })
+                    );
+                    lightHalo.position.set(pos.x, 3, pos.z);
+                    scene.add(lightHalo);
+                    
+                    // Shelf structure
+                    const shelfWidth = 5;
+                    const shelfHeight = 6;
+                    const shelfDepth = 0.5;
+                    
+                    const shelfBase = new THREE.Mesh(
+                        new THREE.BoxGeometry(shelfWidth, 0.2, shelfDepth),
+                        new THREE.MeshStandardMaterial({ color: 0x1a3300 })
+                    );
+                    shelfBase.position.y = 0.1;
+                    shelfBase.castShadow = true;
+                    shelfBase.receiveShadow = true;
+                    shelfGroup.add(shelfBase);
+                    
+                    const shelfTop = new THREE.Mesh(
+                        new THREE.BoxGeometry(shelfWidth, 0.2, shelfDepth),
+                        new THREE.MeshStandardMaterial({ color: 0x1a3300 })
+                    );
+                    shelfTop.position.y = shelfHeight - 0.1;
+                    shelfTop.castShadow = true;
+                    shelfTop.receiveShadow = true;
+                    shelfGroup.add(shelfTop);
+                    
+                    const leftSide = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.2, shelfHeight, shelfDepth),
+                        new THREE.MeshStandardMaterial({ color: 0x1a3300 })
+                    );
+                    leftSide.position.set(-shelfWidth/2 + 0.1, shelfHeight/2, 0);
+                    leftSide.castShadow = true;
+                    leftSide.receiveShadow = true;
+                    shelfGroup.add(leftSide);
+                    
+                    const rightSide = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.2, shelfHeight, shelfDepth),
+                        new THREE.MeshStandardMaterial({ color: 0x1a3300 })
+                    );
+                    rightSide.position.set(shelfWidth/2 - 0.1, shelfHeight/2, 0);
+                    rightSide.castShadow = true;
+                    rightSide.receiveShadow = true;
+                    shelfGroup.add(rightSide);
+                    
+                    // Shelves
+                    const shelfCount = 5;
+                    for (let i = 0; i < shelfCount; i++) {
+                        const shelf = new THREE.Mesh(
+                            new THREE.BoxGeometry(shelfWidth - 0.4, 0.1, shelfDepth - 0.1),
+                            new THREE.MeshStandardMaterial({ color: 0x223300 })
+                        );
+                        shelf.position.set(0, (i + 1) * (shelfHeight / (shelfCount + 1)), 0);
+                        shelf.castShadow = true;
+                        shelf.receiveShadow = true;
+                        shelfGroup.add(shelf);
+                        
+                        // Books on each shelf
+                        const booksPerShelf = 8;
+                        for (let j = 0; j < booksPerShelf; j++) {
+                            const book = new THREE.Mesh(
+                                bookGeometry,
+                                new THREE.MeshStandardMaterial({ 
+                                    color: 0x8b4513, // Default brown color
+                                    roughness: 0.5,
+                                    metalness: 0.1
+                                })
+                            );
+                            
+                            const bookPositionX = -shelfWidth/2 + 0.5 + j * (shelfWidth - 1) / booksPerShelf;
+                            const bookPositionY = shelf.position.y + 0.1;
+                            const bookPositionZ = 0;
+                            
+                            book.position.set(bookPositionX, bookPositionY, bookPositionZ);
+                            book.rotation.y = Math.random() * 0.2 - 0.1;
+                            book.castShadow = true;
+                            book.receiveShadow = true;
+                            
+                            // Add glowing outline to books
+                            const edges = new THREE.EdgesGeometry(bookGeometry);
+                            const edgeMaterial = new THREE.LineBasicMaterial({ 
+                                color: categoryColors[category],
+                                linewidth: 2,
+                                transparent: true,
+                                opacity: 0.7
+                            });
+                            const line = new THREE.LineSegments(edges, edgeMaterial);
+                            line.position.copy(book.position);
+                            line.rotation.copy(book.rotation);
+                            line.scale.copy(book.scale);
+                            shelfGroup.add(line);
+                            
+                            // Store book info
+                            book.userData = {
+                                isBook: true,
+                                category: category,
+                                bookIndex: j % books[category].length,
+                                outline: line,
+                                originalPosition: book.position.clone(),
+                                originalRotation: book.rotation.clone(),
+                                originalParent: shelfGroup
+                            };
+                            
+                            // Add hover effect
+                            book.onBeforeRender = function() {
+                                if (this.userData.isHovered) {
+                                    this.scale.set(1.1, 1.1, 1.1);
+                                    this.userData.outline.material.opacity = 1;
+                                } else {
+                                    this.scale.set(1, 1, 1);
+                                    this.userData.outline.material.opacity = 0.7;
+                                }
+                            };
+                            
+                            shelfGroup.add(book);
+                        }
+                    }
+                    
+                    // Add glowing edges to the bookshelf
+                    const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(shelfWidth, shelfHeight, shelfDepth));
+                    const line = new THREE.LineSegments(
+                        edges,
+                        new THREE.LineBasicMaterial({ 
+                            color: categoryColors[category],
+                            transparent: true, 
+                            opacity: 0.5 
+                        })
+                    );
+                    line.position.y = shelfHeight / 2;
+                    shelfGroup.add(line);
+                    
+                    scene.add(shelfGroup);
+                    bookshelves.push(shelfGroup);
+                    
+                    // Add shelf label
+                    const label = document.createElement('div');
+                    label.className = 'shelf-label';
+                    label.textContent = category.replace(/_/g, ' ');
+                    document.body.appendChild(label);
+                    
+                    shelfGroup.userData = { label };
+                });
+                
+                // Raycaster for book interaction
+                const raycaster = new THREE.Raycaster();
+                const mouse = new THREE.Vector2();
+                let hoveredBook = null;
+                let isDragging = false;
+                let draggedBook = null;
+                
+                function onMouseMove(event) {
+                    // Calculate mouse position in normalized device coordinates
+                    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                    
+                    // Update hand pointer position in VR mode
+                    if (isVRMode) {
+                        handPointer.style.left = `${event.clientX}px`;
+                        handPointer.style.top = `${event.clientY}px`;
+                    }
+                    
+                    if (!controls.isLocked && !isVRMode) return;
+                    
+                    // Update the raycaster with the camera and mouse position
+                    raycaster.setFromCamera(mouse, camera);
+                    
+                    // Calculate objects intersecting the picking ray
+                    const intersects = raycaster.intersectObjects(scene.children, true);
+                    
+                    // Reset previously hovered book
+                    if (hoveredBook) {
+                        hoveredBook.userData.isHovered = false;
+                        hoveredBook = null;
+                    }
+                    
+                    // Find the first book in the intersects
+                    for (let i = 0; i < intersects.length; i++) {
+                        const object = intersects[i].object;
+                        
+                        if (object.userData.isBook) {
+                            object.userData.isHovered = true;
+                            hoveredBook = object;
+                            break;
+                        }
+                    }
+                    
+                    // If dragging a book in VR mode, update its position
+                    if (isDragging && draggedBook && isVRMode) {
+                        // Find intersection point with an invisible plane at book's original height
+                        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -draggedBook.userData.originalPosition.y);
+                        const intersection = new THREE.Vector3();
+                        raycaster.ray.intersectPlane(plane, intersection);
+                        
+                        if (intersection) {
+                            // Move the book slightly in front of the camera
+                            const direction = intersection.clone().sub(camera.position).normalize();
+                            const distance = 2; // Distance from camera
+                            const newPosition = camera.position.clone().add(direction.multiplyScalar(distance));
+                            
+                            // Keep the book at its original height
+                            newPosition.y = draggedBook.userData.originalPosition.y;
+                            
+                            draggedBook.position.copy(newPosition);
+                            
+                            // Update the book in hand UI position
+                            bookInHand.style.left = `${event.clientX + 20}px`;
+                            bookInHand.style.top = `${event.clientY + 20}px`;
+                        }
+                    }
+                }
+                
+                function onMouseDown(event) {
+                    if (!controls.isLocked && !isVRMode) return;
+                    
+                    // Update the raycaster with the camera and mouse position
+                    raycaster.setFromCamera(mouse, camera);
+                    
+                    // Calculate objects intersecting the picking ray
+                    const intersects = raycaster.intersectObjects(scene.children, true);
+                    
+                    for (let i = 0; i < intersects.length; i++) {
+                        const object = intersects[i].object;
+                        
+                        if (object.userData.isBook) {
+                            if (isVRMode) {
+                                // In VR mode, pick up the book
+                                isDragging = true;
+                                draggedBook = object;
+                                currentBook = object;
+                                
+                                // Make the book follow the mouse
+                                object.userData.originalParent.remove(object);
+                                scene.add(object);
+                                
+                                // Show the book in hand UI
+                                bookInHand.style.display = 'flex';
+                                bookInHand.style.left = `${event.clientX + 20}px`;
+                                bookInHand.style.top = `${event.clientY + 20}px`;
+                                bookInHandTitle.textContent = books[object.userData.category][object.userData.bookIndex].title;
+                                
+                                // Make the original book invisible
+                                object.visible = false;
+                            } else {
+                                // In normal mode, open the book viewer
+                                const bookInfo = books[object.userData.category][object.userData.bookIndex];
+                                bookContent.innerHTML = `
+                                    <h2 style="color: ${new THREE.Color(categoryColors[object.userData.category]).getStyle()}">
+                                        ${bookInfo.title}
+                                    </h2>
+                                    <div class="book-title">${bookInfo.title}</div>
+                                    <p>${bookInfo.content}</p>
+                                `;
+                                bookViewer.style.display = 'flex';
+                                canvasContainer.style.display = 'none';
+                            }
+                            break;
+                        }
+                    }
+                    
+                    // Check if clicking on the book in hand in VR mode
+                    if (isVRMode && currentBook && bookInHand.style.display === 'flex') {
+                        const bookInfo = books[currentBook.userData.category][currentBook.userData.bookIndex];
+                        bookContent.innerHTML = `
+                            <h2 style="color: ${new THREE.Color(categoryColors[currentBook.userData.category]).getStyle()}">
+                                ${bookInfo.title}
+                            </h2>
+                            <div class="book-title">${bookInfo.title}</div>
+                            <p>${bookInfo.content}</p>
+                        `;
+                        bookViewer.style.display = 'flex';
+                        canvasContainer.style.display = 'none';
+                    }
+                }
+                
+                function onMouseUp() {
+                    if (isDragging && draggedBook && isVRMode) {
+                        isDragging = false;
+                        
+                        // Return the book to its original position
+                        if (draggedBook) {
+                            draggedBook.position.copy(draggedBook.userData.originalPosition);
+                            draggedBook.rotation.copy(draggedBook.userData.originalRotation);
+                            scene.remove(draggedBook);
+                            draggedBook.userData.originalParent.add(draggedBook);
+                            draggedBook.visible = true;
+                            draggedBook = null;
+                        }
+                        
+                        // Hide the book in hand UI
+                        bookInHand.style.display = 'none';
+                    }
+                }
+                
+                window.addEventListener('mousemove', onMouseMove, false);
+                window.addEventListener('mousedown', onMouseDown, false);
+                window.addEventListener('mouseup', onMouseUp, false);
+                
+                // Animation loop
+                const clock = new THREE.Clock();
+                
+                function animate() {
+                    requestAnimationFrame(animate);
+                    
+                    const delta = clock.getDelta();
+                    
+                    // Update controls based on button states
+                    if (controls.isLocked) {
+                        if (moveForward) controls.moveForward(0.1);
+                        if (moveBackward) controls.moveForward(-0.1);
+                        if (turnLeft) controls.getObject().rotation.y += 0.02;
+                        if (turnRight) controls.getObject().rotation.y -= 0.02;
+                    }
+                    
+                    // Update shelf labels
+                    bookshelves.forEach(shelf => {
+                        const shelfPosition = shelf.position.clone();
+                        shelfPosition.y += 3; // Position label above the shelf
+                        const worldPosition = shelfPosition.clone().project(camera);
+                        
+                        const x = (worldPosition.x * 0.5 + 0.5) * window.innerWidth;
+                        const y = (worldPosition.y * -0.5 + 0.5) * window.innerHeight;
+                        
+                        shelf.userData.label.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
+                        shelf.userData.label.style.display = worldPosition.z > 1 ? 'none' : 'block';
+                        
+                        // Update label color based on category
+                        const categoryIndex = bookshelves.indexOf(shelf);
+                        if (categoryIndex >= 0 && categoryIndex < shelfCategories.length) {
+                            const category = shelfCategories[categoryIndex];
+                            shelf.userData.label.style.color = new THREE.Color(categoryColors[category]).getStyle();
+                            shelf.userData.label.style.textShadow = `0 0 10px ${new THREE.Color(categoryColors[category]).getStyle()}`;
+                        }
+                    });
+                    
+                    renderer.render(scene, camera);
+                }
+                
+                // Handle window resize
+                function onWindowResize() {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+                
+                window.addEventListener('resize', onWindowResize, false);
+                
+                animate();
+            }
+        });
+    </script>
+</body>
+</html>
